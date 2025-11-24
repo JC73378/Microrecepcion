@@ -1,29 +1,27 @@
-# Imagen base con Maven y JDK
+# Imagen base con Maven y JDK (fase de construcción)
 FROM maven:3.8.6-openjdk-17 AS builder
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de configuración de Maven primero (para cache)
-COPY pom.xml .
+# Copiar pom primero para aprovechar cache de dependencias
+COPY pom.xml ./
 COPY src ./src
 
-# Empaquetar la aplicación
-RUN mvn clean package -DskipTests
+# Construir en modo no interactivo y sin tests
+RUN mvn -B -DskipTests package --no-transfer-progress
 
 # Imagen final más liviana
 FROM openjdk:17-jre-slim
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiar el JAR desde la fase de construcción
-COPY --from=builder /app/target/*.jar app.jar
+# Nombre explícito del JAR generado por Maven (evita "glob" ambiguo)
+ARG JAR_FILE=target/PartAsign-Recepcion-MS-0.0.1-SNAPSHOT.jar
+COPY --from=builder /app/${JAR_FILE} app.jar
 
-# Exponer puerto (normalmente 8080 para Spring Boot)
-EXPOSE 8080
+# Puerto por defecto; Render provee la variable de entorno PORT
+EXPOSE 9102
 
-# Comando para ejecutar
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
-#nombre cambiado
+# Permitir pasar opciones de JVM via env var y respetar PORT de Render
+ENV JAVA_OPTS=""
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-9102} -jar app.jar"]
