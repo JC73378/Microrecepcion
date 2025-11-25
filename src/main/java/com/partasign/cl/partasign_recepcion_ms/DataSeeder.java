@@ -3,6 +3,7 @@ package com.partasign.cl.partasign_recepcion_ms;
 import com.github.javafaker.Faker;
 import com.partasign.cl.partasign_recepcion_ms.Model.RecepcionRepuesto;
 import com.partasign.cl.partasign_recepcion_ms.Repository.RecepcionRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -15,14 +16,17 @@ public class DataSeeder implements CommandLineRunner {
 
     private final RecepcionRepository repository;
     private final Faker faker = new Faker(new Locale("es"));
+    private final boolean seedEnabled;
 
-    public DataSeeder(RecepcionRepository repository) {
+    public DataSeeder(RecepcionRepository repository,
+                      @Value("${app.seed.enabled:true}") boolean seedEnabled) {
         this.repository = repository;
+        this.seedEnabled = seedEnabled;
     }
 
     @Override
     public void run(String... args) {
-        if (repository.count() > 0) {
+        if (!seedEnabled || repository.count() > 0) {
             return;
         }
 
